@@ -1,8 +1,9 @@
-using PoCDocumentCreation;
-using PoCDocumentCreation.Bot;
+using Microsoft.Agents.Builder;
 using Microsoft.Agents.Hosting.AspNetCore;
 using Microsoft.Agents.Storage;
-using Microsoft.Agents.Builder;
+using PoCDocumentCreation;
+using PoCDocumentCreation.Bot;
+using PoCDocumentCreation.Bot.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,21 +13,13 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddCloudAdapter();
 builder.Logging.AddConsole();
 
-// Add AspNet token validation
 builder.Services.AddBotAspNetAuthentication(builder.Configuration);
-
-// Register IStorage.  For development, MemoryStorage is suitable.
-// For production Agents, persisted storage should be used so
-// that state survives Agent restarts, and operate correctly
-// in a cluster of Agent instances.
 builder.Services.AddSingleton<IStorage, MemoryStorage>();
-
-// Add AgentApplicationOptions from config.
 builder.AddAgentApplicationOptions();
-
-// Add the bot (which is transient)
-builder.AddAgent<EchoBot>();
-builder.Services.AddSingleton<IStorage, MemoryStorage>();
+builder.Services.Configure<AzureFoundryAgentOptions>(builder.Configuration.GetSection("AzureFoundry"));
+builder.Services.AddSingleton<IAzureFoundryAgentClient, AzureFoundryAgentClient>();
+builder.Services.AddSingleton<IDocumentSessionStore, DocumentSessionStore>();
+builder.AddAgent<ArchitectureAgent>();
 
 var app = builder.Build();
 
@@ -39,7 +32,6 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Map the /api/messages endpoint to the AgentApplication
 app.MapPost("/api/messages", async (HttpRequest request, HttpResponse response, IAgentHttpAdapter adapter, IAgent agent, CancellationToken cancellationToken) =>
 {
     await adapter.ProcessAsync(request, response, agent, cancellationToken);
@@ -47,7 +39,7 @@ app.MapPost("/api/messages", async (HttpRequest request, HttpResponse response, 
 
 if (app.Environment.IsDevelopment() || app.Environment.EnvironmentName == "Playground")
 {
-    app.MapGet("/", () => "Echo Agent");
+    app.MapGet("/", () => "Architecture Agent");
     app.UseDeveloperExceptionPage();
     app.MapControllers().AllowAnonymous();
 }
