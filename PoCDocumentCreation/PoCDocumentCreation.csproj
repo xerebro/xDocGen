@@ -9,7 +9,7 @@
     <PackageReference Include="Microsoft.Agents.Authentication.Msal" Version="1.*" />
     <PackageReference Include="Microsoft.Agents.Hosting.AspNetCore" Version="1.*" />
     <PackageReference Include="NPOI" Version="2.7.2" />
-    <PackageReference Include="UglyToad.PdfPig" Version="0.0.8" />
+    <PackageReference Include="itext7" Version="8.0.4" />
   </ItemGroup>
 
 </Project>
