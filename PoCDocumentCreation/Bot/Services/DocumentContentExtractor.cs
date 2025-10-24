@@ -3,7 +3,8 @@ using NPOI.HWPF.Extractor;
 using NPOI.HWPF.UserModel;
 using NPOI.POIFS.FileSystem;
 using NPOI.XWPF.UserModel;
-using UglyToad.PdfPig;
+using iText.Kernel.Pdf;
+using iText.Kernel.Pdf.Canvas.Parser;
 
 namespace PoCDocumentCreation.Bot.Services;
 
@@ -39,12 +40,18 @@ internal static class DocumentContentExtractor
     private static string ExtractPdf(byte[] fileBytes)
     {
         using var stream = new MemoryStream(fileBytes, writable: false);
-        using PdfDocument document = PdfDocument.Open(stream);
+        using var reader = new PdfReader(stream);
+        using var document = new PdfDocument(reader);
         var builder = new StringBuilder();
 
-        foreach (var page in document.GetPages())
+        for (int pageNumber = 1; pageNumber <= document.GetNumberOfPages(); pageNumber++)
         {
-            builder.AppendLine(page.Text);
+            string? text = PdfTextExtractor.GetTextFromPage(document.GetPage(pageNumber));
+
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                builder.AppendLine(text.Trim());
+            }
         }
 
         return builder.ToString();
